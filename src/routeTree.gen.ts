@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as JogosContarRouteImport } from './routes/jogos/contar'
 import { Route as JogosCoresRouteImport } from './routes/jogos/cores'
 import { Route as JogosFormasRouteImport } from './routes/jogos/formas'
+import { Route as JogosMemoriaRouteImport } from './routes/jogos/memoria'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -34,18 +35,25 @@ const JogosFormasRoute = JogosFormasRouteImport.update({
   path: '/jogos/formas',
   getParentRoute: () => rootRouteImport,
 } as any)
+const JogosMemoriaRoute = JogosMemoriaRouteImport.update({
+  id: '/jogos/memoria',
+  path: '/jogos/memoria',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/jogos/contar': typeof JogosContarRoute
   '/jogos/cores': typeof JogosCoresRoute
   '/jogos/formas': typeof JogosFormasRoute
+  '/jogos/memoria': typeof JogosMemoriaRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/jogos/contar': typeof JogosContarRoute
   '/jogos/cores': typeof JogosCoresRoute
   '/jogos/formas': typeof JogosFormasRoute
+  '/jogos/memoria': typeof JogosMemoriaRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -53,13 +61,22 @@ export interface FileRoutesById {
   '/jogos/contar': typeof JogosContarRoute
   '/jogos/cores': typeof JogosCoresRoute
   '/jogos/formas': typeof JogosFormasRoute
+  '/jogos/memoria': typeof JogosMemoriaRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/jogos/contar' | '/jogos/cores' | '/jogos/formas'
+  fullPaths:
+    '/' | '/jogos/contar' | '/jogos/cores' | '/jogos/formas' | '/jogos/memoria'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/jogos/contar' | '/jogos/cores' | '/jogos/formas'
-  id: '__root__' | '/' | '/jogos/contar' | '/jogos/cores' | '/jogos/formas'
+  to:
+    '/' | '/jogos/contar' | '/jogos/cores' | '/jogos/formas' | '/jogos/memoria'
+  id:
+    | '__root__'
+    | '/'
+    | '/jogos/contar'
+    | '/jogos/cores'
+    | '/jogos/formas'
+    | '/jogos/memoria'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -67,6 +84,7 @@ export interface RootRouteChildren {
   JogosContarRoute: typeof JogosContarRoute
   JogosCoresRoute: typeof JogosCoresRoute
   JogosFormasRoute: typeof JogosFormasRoute
+  JogosMemoriaRoute: typeof JogosMemoriaRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -99,6 +117,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof JogosFormasRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/jogos/memoria': {
+      id: '/jogos/memoria'
+      path: '/jogos/memoria'
+      fullPath: '/jogos/memoria'
+      preLoaderRoute: typeof JogosMemoriaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -107,6 +132,7 @@ const rootRouteChildren: RootRouteChildren = {
   JogosContarRoute: JogosContarRoute,
   JogosCoresRoute: JogosCoresRoute,
   JogosFormasRoute: JogosFormasRoute,
+  JogosMemoriaRoute: JogosMemoriaRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
