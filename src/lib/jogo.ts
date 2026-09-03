@@ -68,5 +68,5 @@ export const elogios = [
 ];
 
 export function elogioAleatorio() {
-  return elogios[Math.floor(Math.random() * elogios.length)];
+  return elogios[Math.floor(Math.random() * elogios.length)] ?? "Muito bem!";
 }
