@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as JogosCoresRouteImport } from './routes/jogos/cores'
+import { Route as JogosFormasRouteImport } from './routes/jogos/formas'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -22,31 +23,40 @@ const JogosCoresRoute = JogosCoresRouteImport.update({
   path: '/jogos/cores',
   getParentRoute: () => rootRouteImport,
 } as any)
+const JogosFormasRoute = JogosFormasRouteImport.update({
+  id: '/jogos/formas',
+  path: '/jogos/formas',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/jogos/cores': typeof JogosCoresRoute
+  '/jogos/formas': typeof JogosFormasRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/jogos/cores': typeof JogosCoresRoute
+  '/jogos/formas': typeof JogosFormasRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/jogos/cores': typeof JogosCoresRoute
+  '/jogos/formas': typeof JogosFormasRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/jogos/cores'
+  fullPaths: '/' | '/jogos/cores' | '/jogos/formas'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/jogos/cores'
-  id: '__root__' | '/' | '/jogos/cores'
+  to: '/' | '/jogos/cores' | '/jogos/formas'
+  id: '__root__' | '/' | '/jogos/cores' | '/jogos/formas'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   JogosCoresRoute: typeof JogosCoresRoute
+  JogosFormasRoute: typeof JogosFormasRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -65,12 +75,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof JogosCoresRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/jogos/formas': {
+      id: '/jogos/formas'
+      path: '/jogos/formas'
+      fullPath: '/jogos/formas'
+      preLoaderRoute: typeof JogosFormasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   JogosCoresRoute: JogosCoresRoute,
+  JogosFormasRoute: JogosFormasRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
