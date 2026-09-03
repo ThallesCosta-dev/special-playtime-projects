@@ -19,6 +19,18 @@
  */
 
 @theme inline {
+  --font-display: "Baloo 2", ui-rounded, system-ui, sans-serif;
+  --font-sans: "Nunito", ui-sans-serif, system-ui, sans-serif;
+  --color-sol: var(--sol);
+  --color-sol-foreground: var(--sol-foreground);
+  --color-ceu: var(--ceu);
+  --color-ceu-foreground: var(--ceu-foreground);
+  --color-folha: var(--folha);
+  --color-folha-foreground: var(--folha-foreground);
+  --color-morango: var(--morango);
+  --color-morango-foreground: var(--morango-foreground);
+  --color-uva: var(--uva);
+  --color-uva-foreground: var(--uva-foreground);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
