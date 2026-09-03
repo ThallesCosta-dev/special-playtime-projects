@@ -10,12 +10,18 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as JogosContarRouteImport } from './routes/jogos/contar'
 import { Route as JogosCoresRouteImport } from './routes/jogos/cores'
 import { Route as JogosFormasRouteImport } from './routes/jogos/formas'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JogosContarRoute = JogosContarRouteImport.update({
+  id: '/jogos/contar',
+  path: '/jogos/contar',
   getParentRoute: () => rootRouteImport,
 } as any)
 const JogosCoresRoute = JogosCoresRouteImport.update({
@@ -31,30 +37,34 @@ const JogosFormasRoute = JogosFormasRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/jogos/contar': typeof JogosContarRoute
   '/jogos/cores': typeof JogosCoresRoute
   '/jogos/formas': typeof JogosFormasRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/jogos/contar': typeof JogosContarRoute
   '/jogos/cores': typeof JogosCoresRoute
   '/jogos/formas': typeof JogosFormasRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/jogos/contar': typeof JogosContarRoute
   '/jogos/cores': typeof JogosCoresRoute
   '/jogos/formas': typeof JogosFormasRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/jogos/cores' | '/jogos/formas'
+  fullPaths: '/' | '/jogos/contar' | '/jogos/cores' | '/jogos/formas'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/jogos/cores' | '/jogos/formas'
-  id: '__root__' | '/' | '/jogos/cores' | '/jogos/formas'
+  to: '/' | '/jogos/contar' | '/jogos/cores' | '/jogos/formas'
+  id: '__root__' | '/' | '/jogos/contar' | '/jogos/cores' | '/jogos/formas'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  JogosContarRoute: typeof JogosContarRoute
   JogosCoresRoute: typeof JogosCoresRoute
   JogosFormasRoute: typeof JogosFormasRoute
 }
@@ -66,6 +76,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/jogos/contar': {
+      id: '/jogos/contar'
+      path: '/jogos/contar'
+      fullPath: '/jogos/contar'
+      preLoaderRoute: typeof JogosContarRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/jogos/cores': {
@@ -87,6 +104,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  JogosContarRoute: JogosContarRoute,
   JogosCoresRoute: JogosCoresRoute,
   JogosFormasRoute: JogosFormasRoute,
 }
