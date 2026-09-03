@@ -10,33 +10,102 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as JogosContarRouteImport } from './routes/jogos/contar'
+import { Route as JogosCoresRouteImport } from './routes/jogos/cores'
+import { Route as JogosFormasRouteImport } from './routes/jogos/formas'
+import { Route as JogosLetrasRouteImport } from './routes/jogos/letras'
+import { Route as JogosMemoriaRouteImport } from './routes/jogos/memoria'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const JogosContarRoute = JogosContarRouteImport.update({
+  id: '/jogos/contar',
+  path: '/jogos/contar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JogosCoresRoute = JogosCoresRouteImport.update({
+  id: '/jogos/cores',
+  path: '/jogos/cores',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JogosFormasRoute = JogosFormasRouteImport.update({
+  id: '/jogos/formas',
+  path: '/jogos/formas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JogosLetrasRoute = JogosLetrasRouteImport.update({
+  id: '/jogos/letras',
+  path: '/jogos/letras',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JogosMemoriaRoute = JogosMemoriaRouteImport.update({
+  id: '/jogos/memoria',
+  path: '/jogos/memoria',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/jogos/contar': typeof JogosContarRoute
+  '/jogos/cores': typeof JogosCoresRoute
+  '/jogos/formas': typeof JogosFormasRoute
+  '/jogos/letras': typeof JogosLetrasRoute
+  '/jogos/memoria': typeof JogosMemoriaRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/jogos/contar': typeof JogosContarRoute
+  '/jogos/cores': typeof JogosCoresRoute
+  '/jogos/formas': typeof JogosFormasRoute
+  '/jogos/letras': typeof JogosLetrasRoute
+  '/jogos/memoria': typeof JogosMemoriaRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/jogos/contar': typeof JogosContarRoute
+  '/jogos/cores': typeof JogosCoresRoute
+  '/jogos/formas': typeof JogosFormasRoute
+  '/jogos/letras': typeof JogosLetrasRoute
+  '/jogos/memoria': typeof JogosMemoriaRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/jogos/contar'
+    | '/jogos/cores'
+    | '/jogos/formas'
+    | '/jogos/letras'
+    | '/jogos/memoria'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/jogos/contar'
+    | '/jogos/cores'
+    | '/jogos/formas'
+    | '/jogos/letras'
+    | '/jogos/memoria'
+  id:
+    | '__root__'
+    | '/'
+    | '/jogos/contar'
+    | '/jogos/cores'
+    | '/jogos/formas'
+    | '/jogos/letras'
+    | '/jogos/memoria'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  JogosContarRoute: typeof JogosContarRoute
+  JogosCoresRoute: typeof JogosCoresRoute
+  JogosFormasRoute: typeof JogosFormasRoute
+  JogosLetrasRoute: typeof JogosLetrasRoute
+  JogosMemoriaRoute: typeof JogosMemoriaRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +117,51 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/jogos/contar': {
+      id: '/jogos/contar'
+      path: '/jogos/contar'
+      fullPath: '/jogos/contar'
+      preLoaderRoute: typeof JogosContarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/jogos/cores': {
+      id: '/jogos/cores'
+      path: '/jogos/cores'
+      fullPath: '/jogos/cores'
+      preLoaderRoute: typeof JogosCoresRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/jogos/formas': {
+      id: '/jogos/formas'
+      path: '/jogos/formas'
+      fullPath: '/jogos/formas'
+      preLoaderRoute: typeof JogosFormasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/jogos/letras': {
+      id: '/jogos/letras'
+      path: '/jogos/letras'
+      fullPath: '/jogos/letras'
+      preLoaderRoute: typeof JogosLetrasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/jogos/memoria': {
+      id: '/jogos/memoria'
+      path: '/jogos/memoria'
+      fullPath: '/jogos/memoria'
+      preLoaderRoute: typeof JogosMemoriaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  JogosContarRoute: JogosContarRoute,
+  JogosCoresRoute: JogosCoresRoute,
+  JogosFormasRoute: JogosFormasRoute,
+  JogosLetrasRoute: JogosLetrasRoute,
+  JogosMemoriaRoute: JogosMemoriaRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
