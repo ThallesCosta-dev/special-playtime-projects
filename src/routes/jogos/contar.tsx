@@ -33,7 +33,7 @@ function opcoesPara(n: number) {
 }
 
 function JogoContar() {
-  const [rodadas, setRodadas] = useState(() => embaralhar([1, 2, 3, 4, 5]));
+  const [rodadas, setRodadas] = useState(() => [1, 2, 3, 4, 5]);
   const [indice, setIndice] = useState(0);
   const [opcoes, setOpcoes] = useState<number[]>([]);
   const [msg, setMsg] = useState<{ texto: string; tipo: "acerto" | "erro" } | null>(null);
@@ -50,6 +50,12 @@ function JogoContar() {
     setMarcados([]);
     falar("Quantos você vê? Toque em cada um para contar.");
   }, [quantidade]);
+
+  // Embaralha somente no cliente, evitando divergência com o HTML do servidor.
+  useEffect(() => {
+    setRodadas(embaralhar([1, 2, 3, 4, 5]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (fim) {

@@ -36,7 +36,7 @@ const PALAVRAS = [
 const TOTAL = 5;
 
 function JogoLetras() {
-  const [rodadas, setRodadas] = useState(() => embaralhar(PALAVRAS));
+  const [rodadas, setRodadas] = useState(() => [...PALAVRAS]);
   const [indice, setIndice] = useState(0);
   const [opcoes, setOpcoes] = useState<typeof PALAVRAS>([]);
   const [msg, setMsg] = useState<{ texto: string; tipo: "acerto" | "erro" } | null>(null);
@@ -51,6 +51,12 @@ function JogoLetras() {
     setOpcoes(embaralhar([alvo, ...outras]));
     falar(`Qual figura começa com a letra ${alvo.letra}?`);
   }, [alvo]);
+
+  // Embaralha somente no cliente, evitando divergência com o HTML do servidor.
+  useEffect(() => {
+    setRodadas(embaralhar(PALAVRAS));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (fim) {

@@ -52,7 +52,7 @@ function FormaSvg({ forma, preenchida }: { forma: Forma; preenchida: boolean }) 
 }
 
 function JogoFormas() {
-  const [rodadas, setRodadas] = useState(() => embaralhar(FORMAS));
+  const [rodadas, setRodadas] = useState(() => [...FORMAS]);
   const [indice, setIndice] = useState(0);
   const [opcoes, setOpcoes] = useState<Forma[]>([]);
   const [msg, setMsg] = useState<{ texto: string; tipo: "acerto" | "erro" } | null>(null);
@@ -67,6 +67,12 @@ function JogoFormas() {
     setOpcoes(embaralhar([alvo, ...outras]));
     falar(`Encontre o ${alvo.nome}`);
   }, [alvo]);
+
+  // Embaralha somente no cliente, evitando divergência com o HTML do servidor.
+  useEffect(() => {
+    setRodadas(embaralhar(FORMAS));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (fim) {

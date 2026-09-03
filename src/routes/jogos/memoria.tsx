@@ -33,23 +33,32 @@ const ANIMAIS = [
 
 type Carta = { id: number; emoji: string; nome: string };
 
-function novoBaralho(): Carta[] {
-  return embaralhar(
+function baralhoBase(): Carta[] {
+  return (
     ANIMAIS.flatMap((a, i) => [
       { id: i * 2, emoji: a.emoji, nome: a.nome },
       { id: i * 2 + 1, emoji: a.emoji, nome: a.nome },
-    ]),
+    ])
   );
 }
 
+function novoBaralho(): Carta[] {
+  return embaralhar(baralhoBase());
+}
+
 function JogoMemoria() {
-  const [cartas, setCartas] = useState<Carta[]>(() => novoBaralho());
+  const [cartas, setCartas] = useState<Carta[]>(() => baralhoBase());
   const [viradas, setViradas] = useState<number[]>([]);
   const [achadas, setAchadas] = useState<string[]>([]);
   const [msg, setMsg] = useState<{ texto: string; tipo: "acerto" | "erro" } | null>(null);
   const [bloqueado, setBloqueado] = useState(false);
 
   const fim = achadas.length === ANIMAIS.length;
+
+  // Embaralha somente no cliente, evitando divergência com o HTML do servidor.
+  useEffect(() => {
+    setCartas(novoBaralho());
+  }, []);
 
   useEffect(() => {
     if (fim) {

@@ -35,7 +35,7 @@ const CORES = [
 const TOTAL = 5;
 
 function JogoCores() {
-  const [rodadas, setRodadas] = useState(() => embaralhar(CORES));
+  const [rodadas, setRodadas] = useState(() => [...CORES]);
   const [indice, setIndice] = useState(0);
   const [opcoes, setOpcoes] = useState<typeof CORES>([]);
   const [msg, setMsg] = useState<{ texto: string; tipo: "acerto" | "erro" } | null>(null);
@@ -50,6 +50,12 @@ function JogoCores() {
     setOpcoes(embaralhar([alvo, ...outras]));
     falar(`Onde está a cor ${alvo.nome}?`);
   }, [alvo]);
+
+  // Embaralha somente no cliente, evitando divergência com o HTML do servidor.
+  useEffect(() => {
+    setRodadas(embaralhar(CORES));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (fim) {
