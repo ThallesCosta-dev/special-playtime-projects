@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
-import { JogoLayout, Balao } from "@/components/JogoLayout";
+import { JogoLayout, Balao, TelaFinal } from "@/components/JogoLayout";
 import { elogioAleatorio, embaralhar, falar, somAcerto, somErro, somFesta } from "@/lib/jogo";
 
 export const Route = createFileRoute("/jogos/cores")({
@@ -95,7 +95,7 @@ function JogoCores() {
       onReiniciar={reiniciar}
     >
       {fim ? (
-        <Final onReiniciar={reiniciar} />
+        <TelaFinal onReiniciar={reiniciar} />
       ) : (
         <div className="space-y-8">
           <button
@@ -123,20 +123,5 @@ function JogoCores() {
         </div>
       )}
     </JogoLayout>
-  );
-}
-
-function Final({ onReiniciar }: { onReiniciar: () => void }) {
-  return (
-    <div className="card-brinquedo mx-auto max-w-md p-10 text-center">
-      <p className="text-7xl anim-pulinho">🎉</p>
-      <p className="mt-4 text-3xl font-extrabold text-foreground">Muito bem!</p>
-      <button
-        onClick={onReiniciar}
-        className="mt-6 rounded-2xl bg-primary px-8 py-4 text-2xl font-extrabold text-primary-foreground shadow-[0_8px_0_0_color-mix(in_oklab,var(--foreground)_18%,transparent)]"
-      >
-        Jogar de novo
-      </button>
-    </div>
   );
 }

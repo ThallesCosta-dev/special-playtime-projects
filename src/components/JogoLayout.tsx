@@ -76,3 +76,18 @@ export function Balao({ texto, tipo }: { texto: string; tipo: "acerto" | "erro" 
     </p>
   );
 }
+
+export function TelaFinal({ onReiniciar, texto = "Muito bem!" }: { onReiniciar: () => void; texto?: string }) {
+  return (
+    <div className="card-brinquedo mx-auto max-w-md p-10 text-center">
+      <p className="text-7xl anim-pulinho">🎉</p>
+      <p className="mt-4 text-3xl font-extrabold text-foreground">{texto}</p>
+      <button
+        onClick={onReiniciar}
+        className="mt-6 rounded-2xl bg-primary px-8 py-4 text-2xl font-extrabold text-primary-foreground shadow-[0_8px_0_0_color-mix(in_oklab,var(--foreground)_18%,transparent)] transition-transform hover:-translate-y-0.5"
+      >
+        Jogar de novo
+      </button>
+    </div>
+  );
+}
