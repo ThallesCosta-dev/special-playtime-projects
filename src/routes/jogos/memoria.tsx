@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
-import { JogoLayout, Balao, TelaFinal } from "@/components/JogoLayout";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { JogoLayout, TelaFinal } from "@/components/JogoLayout";
+import type { Mensagem } from "@/hooks/useRodadas";
 import { elogioAleatorio, embaralhar, falar, somAcerto, somErro, somFesta } from "@/lib/jogo";
 
 export const Route = createFileRoute("/jogos/memoria")({
@@ -17,8 +18,6 @@ export const Route = createFileRoute("/jogos/memoria")({
         property: "og:description",
         content: "Jogo da memória curto e acessível com quatro pares de animais.",
       },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: JogoMemoria,
@@ -34,31 +33,43 @@ const ANIMAIS = [
 type Carta = { id: number; emoji: string; nome: string };
 
 function baralhoBase(): Carta[] {
-  return (
-    ANIMAIS.flatMap((a, i) => [
-      { id: i * 2, emoji: a.emoji, nome: a.nome },
-      { id: i * 2 + 1, emoji: a.emoji, nome: a.nome },
-    ])
-  );
-}
-
-function novoBaralho(): Carta[] {
-  return embaralhar(baralhoBase());
+  return ANIMAIS.flatMap((a, i) => [
+    { id: i * 2, emoji: a.emoji, nome: a.nome },
+    { id: i * 2 + 1, emoji: a.emoji, nome: a.nome },
+  ]);
 }
 
 function JogoMemoria() {
   const [cartas, setCartas] = useState<Carta[]>(() => baralhoBase());
   const [viradas, setViradas] = useState<number[]>([]);
   const [achadas, setAchadas] = useState<string[]>([]);
-  const [msg, setMsg] = useState<{ texto: string; tipo: "acerto" | "erro" } | null>(null);
+  const [msg, setMsg] = useState<Mensagem | null>(null);
   const [bloqueado, setBloqueado] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fim = achadas.length === ANIMAIS.length;
 
+  const limparTimer = useCallback(() => {
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = null;
+  }, []);
+
+  const reiniciar = useCallback(() => {
+    limparTimer();
+    setCartas(embaralhar(baralhoBase()));
+    setViradas([]);
+    setAchadas([]);
+    setMsg(null);
+    setBloqueado(false);
+  }, [limparTimer]);
+
   // Embaralha somente no cliente, evitando divergência com o HTML do servidor.
   useEffect(() => {
-    setCartas(novoBaralho());
-  }, []);
+    reiniciar();
+  }, [reiniciar]);
+
+  // Cancela o timer pendente ao sair da página.
+  useEffect(() => () => limparTimer(), [limparTimer]);
 
   useEffect(() => {
     if (fim) {
@@ -66,14 +77,6 @@ function JogoMemoria() {
       falar("Você encontrou todos os pares. Parabéns!");
     }
   }, [fim]);
-
-  const reiniciar = useCallback(() => {
-    setCartas(novoBaralho());
-    setViradas([]);
-    setAchadas([]);
-    setMsg(null);
-    setBloqueado(false);
-  }, []);
 
   function virar(id: number) {
     if (bloqueado || viradas.includes(id)) return;
@@ -92,20 +95,25 @@ function JogoMemoria() {
       somAcerto();
       const e = elogioAleatorio();
       setMsg({ texto: `${e} Um par de ${a.nome}!`, tipo: "acerto" });
-      setTimeout(() => {
+      // Entra na fila para não cortar o nome do animal que acabou de ser falado.
+      falar(`${e} Um par de ${a.nome}.`, { interromper: false });
+      timer.current = setTimeout(() => {
+        timer.current = null;
         setAchadas((s) => [...s, a.nome]);
         setViradas([]);
         setMsg(null);
         setBloqueado(false);
-      }, 1200);
+      }, 1400);
     } else {
       somErro();
       setMsg({ texto: "Tente outro par", tipo: "erro" });
-      setTimeout(() => {
+      falar("Tente outro par", { interromper: false });
+      timer.current = setTimeout(() => {
+        timer.current = null;
         setViradas([]);
         setMsg(null);
         setBloqueado(false);
-      }, 1300);
+      }, 1500);
     }
   }
 
@@ -116,31 +124,31 @@ function JogoMemoria() {
       estrelas={achadas.length}
       total={ANIMAIS.length}
       onReiniciar={reiniciar}
+      mensagem={msg}
     >
       {fim ? (
         <TelaFinal onReiniciar={reiniciar} texto="Você achou todos os pares!" />
       ) : (
-        <div className="space-y-8">
-          <div className="mx-auto grid max-w-xl grid-cols-4 gap-3 sm:gap-5">
-            {cartas.map((c) => {
-              const aberta = viradas.includes(c.id) || achadas.includes(c.nome);
-              return (
-                <button
-                  key={c.id}
-                  onClick={() => virar(c.id)}
-                  aria-label={aberta ? c.nome : "Carta virada para baixo"}
-                  className={
-                    "flex h-28 items-center justify-center rounded-3xl border-4 border-foreground/10 text-5xl shadow-[0_8px_0_0_color-mix(in_oklab,var(--foreground)_14%,transparent)] transition-transform hover:-translate-y-1 active:translate-y-1 sm:h-36 sm:text-6xl " +
-                    (aberta ? "bg-card anim-brilho" : "bg-ceu text-ceu-foreground")
-                  }
-                >
-                  {aberta ? c.emoji : "❓"}
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="h-14">{msg && <Balao texto={msg.texto} tipo={msg.tipo} />}</div>
+        <div className="mx-auto grid max-w-xl grid-cols-4 gap-3 sm:gap-5">
+          {cartas.map((c) => {
+            const achada = achadas.includes(c.nome);
+            const aberta = achada || viradas.includes(c.id);
+            return (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => virar(c.id)}
+                disabled={achada}
+                aria-label={aberta ? c.nome : "Carta virada para baixo"}
+                className={
+                  "flex h-28 items-center justify-center rounded-3xl border-4 border-foreground/10 text-5xl shadow-[0_8px_0_0_color-mix(in_oklab,var(--foreground)_14%,transparent)] transition-transform hover:-translate-y-1 active:translate-y-1 disabled:translate-y-0 sm:h-36 sm:text-6xl " +
+                  (aberta ? "bg-card anim-brilho" : "bg-ceu text-ceu-foreground")
+                }
+              >
+                {aberta ? c.emoji : "❓"}
+              </button>
+            );
+          })}
         </div>
       )}
     </JogoLayout>

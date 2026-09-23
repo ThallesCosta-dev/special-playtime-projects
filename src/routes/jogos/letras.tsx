@@ -1,30 +1,30 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
-import { JogoLayout, Balao, TelaFinal } from "@/components/JogoLayout";
-import { elogioAleatorio, embaralhar, falar, somAcerto, somErro, somFesta } from "@/lib/jogo";
+import { JogoLayout, TelaFinal } from "@/components/JogoLayout";
+import { useRodadas } from "@/hooks/useRodadas";
+import { elogioAleatorio, montarOpcoes } from "@/lib/jogo";
 
 export const Route = createFileRoute("/jogos/letras")({
   head: () => ({
     meta: [
-      { title: "Som das Letras | Brincar e Aprender" },
+      { title: "Jogo das Letras | Brincar e Aprender" },
       {
         name: "description",
         content:
-          "Jogo de consciência fonológica: ouça a letra e escolha a figura cuja palavra começa com esse som.",
+          "Jogo de reconhecimento de letras: ouça o nome da letra e escolha a figura cuja palavra começa com ela.",
       },
-      { property: "og:title", content: "Som das Letras | Brincar e Aprender" },
+      { property: "og:title", content: "Jogo das Letras | Brincar e Aprender" },
       {
         property: "og:description",
-        content: "Ouça a letra e escolha a figura que começa com esse som.",
+        content: "Ouça o nome da letra e escolha a figura que começa com ela.",
       },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: JogoLetras,
 });
 
-const PALAVRAS = [
+type Palavra = { letra: string; emoji: string; palavra: string };
+
+const PALAVRAS: readonly Palavra[] = [
   { letra: "B", emoji: "🍌", palavra: "banana" },
   { letra: "C", emoji: "🐶", palavra: "cachorro" },
   { letra: "F", emoji: "🌺", palavra: "flor" },
@@ -36,99 +36,83 @@ const PALAVRAS = [
 const TOTAL = 5;
 
 function JogoLetras() {
-  const [rodadas, setRodadas] = useState(() => [...PALAVRAS]);
-  const [indice, setIndice] = useState(0);
-  const [opcoes, setOpcoes] = useState<typeof PALAVRAS>([]);
-  const [msg, setMsg] = useState<{ texto: string; tipo: "acerto" | "erro" } | null>(null);
-  const [bloqueado, setBloqueado] = useState(false);
+  const jogo = useRodadas<Palavra, Palavra>({
+    itens: PALAVRAS,
+    total: TOTAL,
+    gerarOpcoes: (alvo, aleatorio) =>
+      montarOpcoes(
+        alvo,
+        PALAVRAS.filter((p) => p.letra !== alvo.letra),
+        aleatorio,
+      ),
+    instrucaoFalada: (alvo) => `Qual figura começa com a letra ${alvo.letra}?`,
+    fraseFinal: "Você acertou as letras. Parabéns!",
+  });
+  const { alvo } = jogo;
 
-  const alvo = rodadas[indice];
-  const fim = indice >= TOTAL;
-
-  useEffect(() => {
-    if (!alvo) return;
-    const outras = embaralhar(PALAVRAS.filter((p) => p.letra !== alvo.letra)).slice(0, 2);
-    setOpcoes(embaralhar([alvo, ...outras]));
-    falar(`Qual figura começa com a letra ${alvo.letra}?`);
-  }, [alvo]);
-
-  // Embaralha somente no cliente, evitando divergência com o HTML do servidor.
-  useEffect(() => {
-    setRodadas(embaralhar(PALAVRAS));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    if (fim) {
-      somFesta();
-      falar("Você acertou as letras. Parabéns!");
-    }
-  }, [fim]);
-
-  const reiniciar = useCallback(() => {
-    setRodadas(embaralhar(PALAVRAS));
-    setIndice(0);
-    setMsg(null);
-    setBloqueado(false);
-  }, []);
-
-  function escolher(letra: string, palavra: string) {
-    if (bloqueado || !alvo) return;
-    if (letra === alvo.letra) {
-      setBloqueado(true);
-      somAcerto();
+  function escolher(p: Palavra) {
+    if (jogo.bloqueado || !alvo) return;
+    if (p.letra === alvo.letra) {
       const e = elogioAleatorio();
-      setMsg({ texto: `${e} ${palavra}!`, tipo: "acerto" });
-      falar(`${e} ${palavra}.`);
-      setTimeout(() => {
-        setMsg(null);
-        setBloqueado(false);
-        setIndice((i) => i + 1);
-      }, 1600);
+      jogo.acertar(
+        `${e} ${p.palavra} começa com ${p.letra}!`,
+        `${e} ${p.palavra} começa com a letra ${p.letra}.`,
+        1600,
+      );
     } else {
-      somErro();
-      setMsg({ texto: `${palavra} começa com outra letra`, tipo: "erro" });
-      falar(`${palavra} começa com outra letra`);
-      setTimeout(() => setMsg(null), 1400);
+      // Nomeia a letra da figura escolhida: o erro também ensina.
+      jogo.errar(
+        `${p.palavra} começa com ${p.letra}`,
+        `${p.palavra} começa com a letra ${p.letra}. Tente outra.`,
+        1400,
+      );
     }
   }
 
   return (
     <JogoLayout
-      titulo="Som das Letras"
-      instrucao={fim ? "Você reconheceu todas as letras!" : "Escolha a figura que começa com a letra"}
-      estrelas={indice}
+      titulo="Jogo das Letras"
+      instrucao={
+        alvo
+          ? `Escolha a figura que começa com a letra ${alvo.letra}`
+          : "Você reconheceu todas as letras!"
+      }
+      estrelas={jogo.estrelas}
       total={TOTAL}
-      onReiniciar={reiniciar}
+      onReiniciar={jogo.reiniciar}
+      mensagem={jogo.msg}
+      vozBloqueada={jogo.avisoVoz}
     >
-      {fim ? (
-        <TelaFinal onReiniciar={reiniciar} texto="Você reconheceu as letras!" />
-      ) : (
+      {alvo ? (
         <div className="space-y-8">
           <button
-            onClick={() => falar(`Qual figura começa com a letra ${alvo?.letra}?`)}
-            aria-label={`Ouvir novamente a letra ${alvo?.letra}`}
+            type="button"
+            onClick={jogo.ouvirDeNovo}
+            aria-label={`Ouvir novamente a letra ${alvo.letra}`}
             className="card-brinquedo mx-auto flex size-40 items-center justify-center text-8xl font-extrabold text-primary anim-pulinho"
           >
-            {alvo?.letra}
+            {alvo.letra}
           </button>
 
           <div className="grid grid-cols-3 gap-4 sm:gap-6">
-            {opcoes.map((p) => (
+            {jogo.opcoes.map((p) => (
               <button
                 key={p.palavra}
-                onClick={() => escolher(p.letra, p.palavra)}
+                type="button"
+                onClick={() => escolher(p)}
                 aria-label={p.palavra}
                 className="flex h-36 flex-col items-center justify-center gap-2 rounded-3xl border-4 border-foreground/10 bg-card shadow-[0_10px_0_0_color-mix(in_oklab,var(--foreground)_14%,transparent)] transition-transform hover:-translate-y-1 active:translate-y-1 sm:h-44"
               >
-                <span className="text-6xl">{p.emoji}</span>
+                <span className="text-6xl" aria-hidden="true">
+                  {p.emoji}
+                </span>
                 <span className="text-lg font-bold text-foreground">{p.palavra}</span>
               </button>
             ))}
           </div>
-
-          <div className="h-14">{msg && <Balao texto={msg.texto} tipo={msg.tipo} />}</div>
         </div>
+      ) : (
+        <TelaFinal onReiniciar={jogo.reiniciar} texto="Você reconheceu as letras!" />
       )}
     </JogoLayout>
   );

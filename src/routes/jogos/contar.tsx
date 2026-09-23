@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
-import { JogoLayout, Balao, TelaFinal } from "@/components/JogoLayout";
-import { elogioAleatorio, embaralhar, falar, somAcerto, somErro, somFesta } from "@/lib/jogo";
+import { useState } from "react";
+import { JogoLayout, TelaFinal } from "@/components/JogoLayout";
+import { useRodadas } from "@/hooks/useRodadas";
+import { elogioAleatorio, falar, montarOpcoes } from "@/lib/jogo";
 
 export const Route = createFileRoute("/jogos/contar")({
   head: () => ({
@@ -17,122 +18,103 @@ export const Route = createFileRoute("/jogos/contar")({
         property: "og:description",
         content: "Contagem de 1 a 5 com apoio de voz e objetos grandes e coloridos.",
       },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: JogoContar,
 });
 
 const OBJETOS = ["🍏", "🐤", "⭐", "🐞", "🎈"];
-const TOTAL = 5;
+const NUMEROS: readonly number[] = [1, 2, 3, 4, 5];
 
-function opcoesPara(n: number) {
-  const outras = embaralhar([1, 2, 3, 4, 5].filter((x) => x !== n)).slice(0, 2);
-  return embaralhar([n, ...outras]);
-}
-
-function JogoContar() {
-  const [rodadas, setRodadas] = useState(() => [1, 2, 3, 4, 5]);
-  const [indice, setIndice] = useState(0);
-  const [opcoes, setOpcoes] = useState<number[]>([]);
-  const [msg, setMsg] = useState<{ texto: string; tipo: "acerto" | "erro" } | null>(null);
-  const [bloqueado, setBloqueado] = useState(false);
+/** Figuras da rodada. Remontado a cada rodada (via `key`), zerando a contagem. */
+function Figuras({ quantidade, objeto }: { quantidade: number; objeto: string }) {
   const [marcados, setMarcados] = useState<number[]>([]);
-
-  const quantidade = rodadas[indice];
-  const objeto = OBJETOS[indice % OBJETOS.length];
-  const fim = indice >= TOTAL;
-
-  useEffect(() => {
-    if (!quantidade) return;
-    setOpcoes(opcoesPara(quantidade));
-    setMarcados([]);
-    falar("Quantos você vê? Toque em cada um para contar.");
-  }, [quantidade]);
-
-  // Embaralha somente no cliente, evitando divergência com o HTML do servidor.
-  useEffect(() => {
-    setRodadas(embaralhar([1, 2, 3, 4, 5]));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    if (fim) {
-      somFesta();
-      falar("Você contou tudo. Parabéns!");
-    }
-  }, [fim]);
-
-  const reiniciar = useCallback(() => {
-    setRodadas(embaralhar([1, 2, 3, 4, 5]));
-    setIndice(0);
-    setMsg(null);
-    setMarcados([]);
-    setBloqueado(false);
-  }, []);
 
   function contar(i: number) {
     if (marcados.includes(i)) return;
     const novos = [...marcados, i];
     setMarcados(novos);
-    falar(String(novos.length));
+    // A primeira figura interrompe a instrução; as seguintes entram na fila,
+    // para que toques rápidos não engulam números ("um, dois, três").
+    falar(String(novos.length), { interromper: novos.length === 1 });
   }
 
+  return (
+    <div className="card-brinquedo flex flex-wrap items-center justify-center gap-4 p-6">
+      {Array.from({ length: quantidade }).map((_, i) => {
+        const marcado = marcados.includes(i);
+        return (
+          <button
+            key={i}
+            type="button"
+            onClick={() => contar(i)}
+            aria-label={marcado ? `Figura ${i + 1}, já contada` : `Contar figura ${i + 1}`}
+            aria-pressed={marcado}
+            className={
+              "text-6xl transition-transform sm:text-7xl " +
+              (marcado ? "scale-110 opacity-60" : "anim-pulinho")
+            }
+            style={marcado ? undefined : { animationDelay: `${i * 0.15}s` }}
+          >
+            {objeto}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function JogoContar() {
+  const jogo = useRodadas<number, number>({
+    itens: NUMEROS,
+    total: NUMEROS.length,
+    gerarOpcoes: (n, aleatorio) =>
+      montarOpcoes(
+        n,
+        NUMEROS.filter((x) => x !== n),
+        aleatorio,
+      ),
+    instrucaoFalada: () => "Quantos você vê? Toque em cada um para contar.",
+    fraseFinal: "Você contou tudo. Parabéns!",
+  });
+  const { alvo: quantidade } = jogo;
+  const objeto = OBJETOS[jogo.indice % OBJETOS.length] ?? OBJETOS[0]!;
+
   function escolher(n: number) {
-    if (bloqueado || !quantidade) return;
+    if (jogo.bloqueado || quantidade === undefined) return;
     if (n === quantidade) {
-      setBloqueado(true);
-      somAcerto();
       const e = elogioAleatorio();
-      setMsg({ texto: `${e} São ${n}!`, tipo: "acerto" });
-      falar(`${e} São ${n}.`);
-      setTimeout(() => {
-        setMsg(null);
-        setBloqueado(false);
-        setIndice((i) => i + 1);
-      }, 1600);
+      const escrito = n === 1 ? "É 1!" : `São ${n}!`;
+      const falado = n === 1 ? "É um." : `São ${n}.`;
+      jogo.acertar(`${e} ${escrito}`, `${e} ${falado}`, 1600);
     } else {
-      somErro();
-      setMsg({ texto: "Conte de novo, com calma", tipo: "erro" });
-      falar("Conte de novo, com calma");
-      setTimeout(() => setMsg(null), 1300);
+      jogo.errar("Conte de novo, com calma", "Conte de novo, com calma", 1300);
     }
   }
 
   return (
     <JogoLayout
       titulo="Vamos Contar"
-      instrucao={fim ? "Contagem completa!" : "Toque em cada figura e diga quantas são"}
-      estrelas={indice}
-      total={TOTAL}
-      onReiniciar={reiniciar}
+      instrucao={
+        quantidade === undefined ? "Contagem completa!" : "Toque em cada figura e diga quantas são"
+      }
+      estrelas={jogo.estrelas}
+      total={NUMEROS.length}
+      onReiniciar={jogo.reiniciar}
+      mensagem={jogo.msg}
+      vozBloqueada={jogo.avisoVoz}
     >
-      {fim ? (
-        <TelaFinal onReiniciar={reiniciar} texto="Você contou tudo!" />
+      {quantidade === undefined ? (
+        <TelaFinal onReiniciar={jogo.reiniciar} texto="Você contou tudo!" />
       ) : (
         <div className="space-y-8">
-          <div className="card-brinquedo flex flex-wrap items-center justify-center gap-4 p-6">
-            {Array.from({ length: quantidade ?? 0 }).map((_, i) => (
-              <button
-                key={i}
-                onClick={() => contar(i)}
-                aria-label={`Contar figura ${i + 1}`}
-                className={
-                  "text-6xl transition-transform sm:text-7xl " +
-                  (marcados.includes(i) ? "scale-110 opacity-60" : "anim-pulinho")
-                }
-                style={{ animationDelay: `${i * 0.15}s` }}
-              >
-                {objeto}
-              </button>
-            ))}
-          </div>
+          <Figuras key={`${jogo.partida}-${jogo.indice}`} quantidade={quantidade} objeto={objeto} />
 
           <div className="grid grid-cols-3 gap-4 sm:gap-6">
-            {opcoes.map((n) => (
+            {jogo.opcoes.map((n) => (
               <button
                 key={n}
+                type="button"
                 onClick={() => escolher(n)}
                 aria-label={`Número ${n}`}
                 className="h-32 rounded-3xl border-4 border-foreground/10 bg-accent text-6xl font-extrabold text-accent-foreground shadow-[0_10px_0_0_color-mix(in_oklab,var(--foreground)_14%,transparent)] transition-transform hover:-translate-y-1 active:translate-y-1 sm:h-40"
@@ -141,8 +123,6 @@ function JogoContar() {
               </button>
             ))}
           </div>
-
-          <div className="h-14">{msg && <Balao texto={msg.texto} tipo={msg.tipo} />}</div>
         </div>
       )}
     </JogoLayout>

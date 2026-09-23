@@ -1,13 +1,38 @@
 /** Utilidades compartilhadas pelos jogos educativos. */
 
-export function falar(texto: string) {
+type OpcoesFala = {
+  /** Interrompe o que estiver sendo falado (padrão). Com `false`, entra na fila. */
+  interromper?: boolean;
+};
+
+/**
+ * Navegadores modernos só permitem síntese de voz depois de alguma interação
+ * do usuário na página. Sem isso, a fala é silenciosamente ignorada.
+ */
+export function podeFalar(): boolean {
+  if (typeof navigator === "undefined") return false;
+  const ativacao = (navigator as Navigator & { userActivation?: { hasBeenActive: boolean } })
+    .userActivation;
+  return ativacao ? ativacao.hasBeenActive : true;
+}
+
+function vozPortugues(): SpeechSynthesisVoice | null {
+  const vozes = window.speechSynthesis.getVoices();
+  return (
+    vozes.find((v) => /^pt[-_]br/i.test(v.lang)) ?? vozes.find((v) => /^pt/i.test(v.lang)) ?? null
+  );
+}
+
+export function falar(texto: string, { interromper = true }: OpcoesFala = {}) {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
   try {
-    window.speechSynthesis.cancel();
+    if (interromper) window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(texto);
     u.lang = "pt-BR";
     u.rate = 0.85;
     u.pitch = 1.1;
+    const voz = vozPortugues();
+    if (voz) u.voice = voz;
     window.speechSynthesis.speak(u);
   } catch {
     /* voz indisponível */
@@ -17,9 +42,13 @@ export function falar(texto: string) {
 let ctx: AudioContext | null = null;
 function tom(freq: number, inicio: number, dur: number, volume = 0.16) {
   if (typeof window === "undefined") return;
-  const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+  const AC =
+    window.AudioContext ??
+    (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
   if (!AC) return;
   ctx ??= new AC();
+  // Safari e Chrome criam o contexto suspenso quando ele nasce fora de um gesto.
+  if (ctx.state === "suspended") void ctx.resume();
   const t0 = ctx.currentTime + inicio;
   const osc = ctx.createOscillator();
   const g = ctx.createGain();
@@ -59,13 +88,23 @@ export function embaralhar<T>(itens: readonly T[]): T[] {
   return copia;
 }
 
-export const elogios = [
-  "Muito bem!",
-  "Isso mesmo!",
-  "Você conseguiu!",
-  "Parabéns!",
-  "Que legal!",
-];
+/**
+ * Monta as alternativas de uma rodada: o alvo mais `quantidade - 1` distratores.
+ * Com `aleatorio = false` a ordem é determinística, o que permite renderizar as
+ * opções já no servidor sem divergir do HTML na hidratação.
+ */
+export function montarOpcoes<T>(
+  alvo: T,
+  distratores: readonly T[],
+  aleatorio: boolean,
+  quantidade = 3,
+): T[] {
+  const outras = (aleatorio ? embaralhar(distratores) : [...distratores]).slice(0, quantidade - 1);
+  const todas = [alvo, ...outras];
+  return aleatorio ? embaralhar(todas) : todas;
+}
+
+export const elogios = ["Muito bem!", "Isso mesmo!", "Você conseguiu!", "Parabéns!", "Que legal!"];
 
 export function elogioAleatorio() {
   return elogios[Math.floor(Math.random() * elogios.length)] ?? "Muito bem!";

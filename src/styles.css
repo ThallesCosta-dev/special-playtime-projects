@@ -1,21 +1,35 @@
 @import "tailwindcss" source(none);
 @source "../src";
-@import "tw-animate-css";
-
-@custom-variant dark (&:is(.dark *));
 
 /*
- * Design system definition.
+ * Fontes auto-hospedadas (subconjunto latino, que cobre todo o português).
+ * Ambas são variáveis no eixo de peso 600-800.
+ */
+@font-face {
+  font-family: "Baloo 2";
+  font-style: normal;
+  font-weight: 600 800;
+  font-display: swap;
+  src: url("/fonts/baloo2-latin.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Nunito";
+  font-style: normal;
+  font-weight: 600 800;
+  font-display: swap;
+  src: url("/fonts/nunito-latin.woff2") format("woff2");
+}
+
+/*
+ * Design system.
  *
- * The @theme inline block maps CSS custom properties to Tailwind utility
- * classes (e.g. --color-primary -> bg-primary, text-primary).
+ * O bloco @theme inline mapeia variáveis CSS para utilitários do Tailwind
+ * (ex.: --color-primary -> bg-primary, text-primary). Os valores reais ficam
+ * em :root, em oklch. O app tem apenas tema claro.
  *
- * The :root and .dark blocks define the actual color values using oklch.
- * All colors MUST use oklch format.
- *
- * To add a new semantic color:
- * 1. Add the variable to :root (light value) and .dark (dark value)
- * 2. Register it in @theme inline as --color-<name>: var(--<name>)
+ * Para adicionar uma cor semântica:
+ * 1. Defina a variável em :root
+ * 2. Registre-a em @theme inline como --color-<nome>: var(--<nome>)
  */
 
 @theme inline {
@@ -42,8 +56,6 @@
   --color-foreground: var(--foreground);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
@@ -52,25 +64,8 @@
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
   --color-border: var(--border);
-  --color-input: var(--input);
   --color-ring: var(--ring);
-  --color-ring-offset-background: var(--background);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
 }
 
 :root {
@@ -79,8 +74,6 @@
   --foreground: oklch(0.29 0.06 265);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.29 0.06 265);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.29 0.06 265);
   --primary: oklch(0.62 0.19 25);
   --primary-foreground: oklch(0.99 0.01 90);
   --secondary: oklch(0.94 0.05 95);
@@ -89,10 +82,7 @@
   --muted-foreground: oklch(0.52 0.04 70);
   --accent: oklch(0.86 0.14 195);
   --accent-foreground: oklch(0.27 0.07 245);
-  --destructive: oklch(0.58 0.22 27);
-  --destructive-foreground: oklch(0.99 0.01 90);
   --border: oklch(0.88 0.04 85);
-  --input: oklch(0.88 0.04 85);
   --ring: oklch(0.62 0.19 25);
   --sol: oklch(0.85 0.16 85);
   --sol-foreground: oklch(0.3 0.08 60);
@@ -104,46 +94,47 @@
   --morango-foreground: oklch(0.99 0.01 90);
   --uva: oklch(0.6 0.16 305);
   --uva-foreground: oklch(0.99 0.01 90);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.98 0.02 95);
-  --sidebar-foreground: oklch(0.29 0.06 265);
-  --sidebar-primary: oklch(0.62 0.19 25);
-  --sidebar-primary-foreground: oklch(0.99 0.01 90);
-  --sidebar-accent: oklch(0.94 0.05 95);
-  --sidebar-accent-foreground: oklch(0.35 0.07 60);
-  --sidebar-border: oklch(0.88 0.04 85);
-  --sidebar-ring: oklch(0.62 0.19 25);
 }
-
 
 @layer base {
   * {
     border-color: var(--color-border);
   }
 
-  body {
-    background-color: var(--color-background);
-    color: var(--color-foreground);
-  }
-}
-
-@layer base {
   html {
     font-family: var(--font-sans);
   }
-  h1, h2, h3, .fonte-display {
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    /* Sem background-attachment: fixed — custa repintura a cada rolagem e o iOS o ignora. */
+    background-image:
+      radial-gradient(
+        circle at 12% 8%,
+        color-mix(in oklab, var(--sol) 32%, transparent),
+        transparent 42%
+      ),
+      radial-gradient(
+        circle at 88% 4%,
+        color-mix(in oklab, var(--accent) 34%, transparent),
+        transparent 40%
+      );
+    background-repeat: no-repeat;
+  }
+
+  h1,
+  h2,
+  h3,
+  .fonte-display {
     font-family: var(--font-display);
     letter-spacing: -0.01em;
   }
-  body {
-    background-image:
-      radial-gradient(circle at 12% 8%, color-mix(in oklab, var(--sol) 32%, transparent), transparent 42%),
-      radial-gradient(circle at 88% 4%, color-mix(in oklab, var(--accent) 34%, transparent), transparent 40%);
-    background-attachment: fixed;
+
+  /* Foco bem visível para teclado e acionadores adaptados. */
+  :where(a, button):focus-visible {
+    outline: 4px solid var(--color-ring);
+    outline-offset: 4px;
   }
 }
 
@@ -155,19 +146,55 @@
 }
 
 @keyframes pulinho {
-  0%, 100% { transform: translateY(0) }
-  50% { transform: translateY(-10px) }
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
 }
 @keyframes tremer {
-  0%, 100% { transform: translateX(0) }
-  25% { transform: translateX(-8px) }
-  75% { transform: translateX(8px) }
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-8px);
+  }
+  75% {
+    transform: translateX(8px);
+  }
 }
 @keyframes brilho {
-  0% { transform: scale(1) rotate(0deg) }
-  50% { transform: scale(1.12) rotate(3deg) }
-  100% { transform: scale(1) rotate(0deg) }
+  0% {
+    transform: scale(1) rotate(0deg);
+  }
+  50% {
+    transform: scale(1.12) rotate(3deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
 }
-.anim-pulinho { animation: pulinho 1.4s ease-in-out infinite }
-.anim-tremer { animation: tremer 0.4s ease-in-out }
-.anim-brilho { animation: brilho 0.6s ease-in-out }
+.anim-pulinho {
+  animation: pulinho 1.4s ease-in-out infinite;
+}
+.anim-tremer {
+  animation: tremer 0.4s ease-in-out;
+}
+.anim-brilho {
+  animation: brilho 0.6s ease-in-out;
+}
+
+/* Respeita quem prefere menos movimento (sensibilidade vestibular ou atencional). */
+@media (prefers-reduced-motion: reduce) {
+  .anim-pulinho,
+  .anim-tremer,
+  .anim-brilho {
+    animation: none;
+  }
+  * {
+    transition-duration: 0.01ms !important;
+  }
+}

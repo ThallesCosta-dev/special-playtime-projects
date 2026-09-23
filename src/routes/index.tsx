@@ -16,11 +16,8 @@ export const Route = createFileRoute("/")({
       },
       {
         property: "og:description",
-        content:
-          "Cinco jogos educativos acessíveis: cores, formas, contagem, memória e som das letras.",
+        content: "Cinco jogos educativos acessíveis: cores, formas, contagem, memória e letras.",
       },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Inicio,
@@ -66,9 +63,9 @@ const JOGOS = [
   {
     para: "/jogos/letras",
     emoji: "🔤",
-    titulo: "Som das Letras",
-    descricao: "Ouvir a letra e achar a figura que começa com ela.",
-    objetivo: "Linguagem oral",
+    titulo: "Jogo das Letras",
+    descricao: "Ouvir o nome da letra e achar a figura que começa com ela.",
+    objetivo: "Reconhecer letras",
     fundo: "bg-uva",
     texto: "text-uva-foreground",
   },
@@ -86,10 +83,11 @@ function Inicio() {
             Brincar e Aprender
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-xl font-semibold text-muted-foreground sm:text-2xl">
-            Cinco jogos curtos, com voz em português, alvos grandes e nenhum tempo limite —
-            pensados para crianças com síndrome de Down.
+            Cinco jogos curtos, com voz em português, alvos grandes e nenhum tempo limite, pensados
+            para crianças com síndrome de Down.
           </p>
           <button
+            type="button"
             onClick={() =>
               falar(
                 "Olá! Escolha um jogo para começar a brincar. Cores, formas, contar, memória ou letras.",
@@ -102,31 +100,34 @@ function Inicio() {
         </header>
 
         <section aria-label="Lista de jogos" className="mt-12 grid gap-6 sm:grid-cols-2">
-          {JOGOS.map((j, i) => (
-            <Link
-              key={j.para}
-              to={j.para}
-              className={`card-brinquedo flex items-center gap-5 p-6 transition-transform hover:-translate-y-1 active:translate-y-1 ${i === 4 ? "sm:col-span-2" : ""}`}
-            >
-              <span
-                aria-hidden="true"
-                className={`flex size-20 shrink-0 items-center justify-center rounded-3xl text-5xl ${j.fundo} ${j.texto}`}
+          {JOGOS.map((j, i) => {
+            const ultimoSozinho = i === JOGOS.length - 1 && JOGOS.length % 2 === 1;
+            return (
+              <Link
+                key={j.para}
+                to={j.para}
+                className={`card-brinquedo flex items-center gap-5 p-6 transition-transform hover:-translate-y-1 active:translate-y-1 ${ultimoSozinho ? "sm:col-span-2" : ""}`}
               >
-                {j.emoji}
-              </span>
-              <span className="min-w-0">
-                <span className="block text-2xl font-extrabold text-foreground fonte-display">
-                  {j.titulo}
+                <span
+                  aria-hidden="true"
+                  className={`flex size-20 shrink-0 items-center justify-center rounded-3xl text-5xl ${j.fundo} ${j.texto}`}
+                >
+                  {j.emoji}
                 </span>
-                <span className="mt-1 block text-lg font-semibold text-muted-foreground">
-                  {j.descricao}
+                <span className="min-w-0">
+                  <span className="fonte-display block text-2xl font-extrabold text-foreground">
+                    {j.titulo}
+                  </span>
+                  <span className="mt-1 block text-lg font-semibold text-muted-foreground">
+                    {j.descricao}
+                  </span>
+                  <span className="mt-2 inline-block rounded-full bg-secondary px-3 py-1 text-sm font-bold text-secondary-foreground">
+                    {j.objetivo}
+                  </span>
                 </span>
-                <span className="mt-2 inline-block rounded-full bg-secondary px-3 py-1 text-sm font-bold text-secondary-foreground">
-                  {j.objetivo}
-                </span>
-              </span>
-            </Link>
-          ))}
+              </Link>
+            );
+          })}
         </section>
 
         <section className="card-brinquedo mt-12 p-8">
@@ -141,7 +142,7 @@ function Inicio() {
         </section>
 
         <footer className="mt-10 pb-6 text-center text-base font-semibold text-muted-foreground">
-          Recurso de apoio pedagógico — não substitui acompanhamento terapêutico.
+          Recurso de apoio pedagógico. Não substitui acompanhamento terapêutico.
         </footer>
       </div>
     </main>
