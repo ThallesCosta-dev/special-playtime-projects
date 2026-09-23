@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
-import { JogoLayout, Balao, TelaFinal } from "@/components/JogoLayout";
-import { elogioAleatorio, embaralhar, falar, somAcerto, somErro, somFesta } from "@/lib/jogo";
+import { JogoLayout, TelaFinal } from "@/components/JogoLayout";
+import { useRodadas } from "@/hooks/useRodadas";
+import { elogioAleatorio, montarOpcoes } from "@/lib/jogo";
 
 export const Route = createFileRoute("/jogos/cores")({
   head: () => ({
@@ -17,116 +17,79 @@ export const Route = createFileRoute("/jogos/cores")({
         property: "og:description",
         content: "Reconhecimento de cores com voz, alvos grandes e reforço positivo.",
       },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: JogoCores,
 });
 
-const CORES = [
-  { nome: "vermelho", classe: "bg-morango", emoji: "🍎" },
-  { nome: "azul", classe: "bg-ceu", emoji: "🐳" },
-  { nome: "verde", classe: "bg-folha", emoji: "🐢" },
-  { nome: "amarelo", classe: "bg-sol", emoji: "🌻" },
-  { nome: "roxo", classe: "bg-uva", emoji: "🍇" },
+type Cor = { nome: string; fundo: string; texto: string; emoji: string };
+
+const CORES: readonly Cor[] = [
+  { nome: "vermelho", fundo: "bg-morango", texto: "text-morango-foreground", emoji: "🍎" },
+  { nome: "azul", fundo: "bg-ceu", texto: "text-ceu-foreground", emoji: "🐳" },
+  { nome: "verde", fundo: "bg-folha", texto: "text-folha-foreground", emoji: "🐢" },
+  { nome: "amarelo", fundo: "bg-sol", texto: "text-sol-foreground", emoji: "🌻" },
+  { nome: "roxo", fundo: "bg-uva", texto: "text-uva-foreground", emoji: "🍇" },
 ];
 
-const TOTAL = 5;
-
 function JogoCores() {
-  const [rodadas, setRodadas] = useState(() => [...CORES]);
-  const [indice, setIndice] = useState(0);
-  const [opcoes, setOpcoes] = useState<typeof CORES>([]);
-  const [msg, setMsg] = useState<{ texto: string; tipo: "acerto" | "erro" } | null>(null);
-  const [bloqueado, setBloqueado] = useState(false);
+  const jogo = useRodadas<Cor, Cor>({
+    itens: CORES,
+    total: CORES.length,
+    gerarOpcoes: (alvo, aleatorio) =>
+      montarOpcoes(
+        alvo,
+        CORES.filter((c) => c !== alvo),
+        aleatorio,
+      ),
+    instrucaoFalada: (alvo) => `Onde está o ${alvo.nome}?`,
+    fraseFinal: "Você terminou o jogo das cores. Parabéns!",
+  });
+  const { alvo } = jogo;
 
-  const alvo = rodadas[indice];
-  const fim = indice >= TOTAL;
-
-  useEffect(() => {
-    if (!alvo) return;
-    const outras = embaralhar(CORES.filter((c) => c.nome !== alvo.nome)).slice(0, 2);
-    setOpcoes(embaralhar([alvo, ...outras]));
-    falar(`Onde está a cor ${alvo.nome}?`);
-  }, [alvo]);
-
-  // Embaralha somente no cliente, evitando divergência com o HTML do servidor.
-  useEffect(() => {
-    setRodadas(embaralhar(CORES));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    if (fim) {
-      somFesta();
-      falar("Você terminou o jogo das cores. Parabéns!");
-    }
-  }, [fim]);
-
-  const reiniciar = useCallback(() => {
-    setRodadas(embaralhar(CORES));
-    setIndice(0);
-    setMsg(null);
-    setBloqueado(false);
-  }, []);
-
-  function escolher(nome: string) {
-    if (bloqueado || !alvo) return;
-    if (nome === alvo.nome) {
-      setBloqueado(true);
-      somAcerto();
-      const e = elogioAleatorio();
-      setMsg({ texto: e, tipo: "acerto" });
-      falar(e);
-      setTimeout(() => {
-        setMsg(null);
-        setBloqueado(false);
-        setIndice((i) => i + 1);
-      }, 1400);
-    } else {
-      somErro();
-      setMsg({ texto: "Tente outra vez", tipo: "erro" });
-      falar("Tente outra vez");
-      setTimeout(() => setMsg(null), 1200);
-    }
+  function escolher(cor: Cor) {
+    if (jogo.bloqueado || !alvo) return;
+    if (cor === alvo) jogo.acertar(elogioAleatorio());
+    else jogo.errar("Tente outra vez");
   }
 
   return (
     <JogoLayout
       titulo="Jogo das Cores"
-      instrucao={fim ? "Você completou todas as cores!" : `Toque na cor ${alvo?.nome}`}
-      estrelas={indice}
-      total={TOTAL}
-      onReiniciar={reiniciar}
+      instrucao={alvo ? `Toque no ${alvo.nome}` : "Você completou todas as cores!"}
+      estrelas={jogo.estrelas}
+      total={CORES.length}
+      onReiniciar={jogo.reiniciar}
+      mensagem={jogo.msg}
+      vozBloqueada={jogo.avisoVoz}
     >
-      {fim ? (
-        <TelaFinal onReiniciar={reiniciar} />
-      ) : (
+      {alvo ? (
         <div className="space-y-8">
           <button
-            onClick={() => falar(`Onde está a cor ${alvo?.nome}?`)}
-            className="mx-auto flex size-40 items-center justify-center rounded-full card-brinquedo text-7xl anim-pulinho"
-            aria-label={`Ouvir novamente: cor ${alvo?.nome}`}
+            type="button"
+            onClick={jogo.ouvirDeNovo}
+            className="card-brinquedo mx-auto flex size-40 items-center justify-center rounded-full text-7xl anim-pulinho"
+            aria-label={`Ouvir novamente: ${alvo.nome}`}
           >
-            {alvo?.emoji}
+            {alvo.emoji}
           </button>
 
           <div className="grid grid-cols-3 gap-4 sm:gap-6">
-            {opcoes.map((c) => (
+            {jogo.opcoes.map((c) => (
               <button
                 key={c.nome}
-                onClick={() => escolher(c.nome)}
+                type="button"
+                onClick={() => escolher(c)}
                 aria-label={`Cor ${c.nome}`}
-                className={`${c.classe} h-32 rounded-3xl border-4 border-foreground/10 text-2xl font-extrabold text-foreground/80 shadow-[0_10px_0_0_color-mix(in_oklab,var(--foreground)_14%,transparent)] transition-transform hover:-translate-y-1 active:translate-y-1 sm:h-40 sm:text-3xl`}
+                className={`${c.fundo} ${c.texto} h-32 rounded-3xl border-4 border-foreground/10 text-2xl font-extrabold shadow-[0_10px_0_0_color-mix(in_oklab,var(--foreground)_14%,transparent)] transition-transform hover:-translate-y-1 active:translate-y-1 sm:h-40 sm:text-3xl`}
               >
                 {c.nome}
               </button>
             ))}
           </div>
-
-          <div className="h-14">{msg && <Balao texto={msg.texto} tipo={msg.tipo} />}</div>
         </div>
+      ) : (
+        <TelaFinal onReiniciar={jogo.reiniciar} />
       )}
     </JogoLayout>
   );
