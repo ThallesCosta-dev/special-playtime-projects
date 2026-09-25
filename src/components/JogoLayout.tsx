@@ -13,6 +13,8 @@ type Props = {
   mensagem?: Mensagem | null;
   /** Mostra a dica de que a voz só toca após o primeiro toque (acesso direto à página). */
   vozBloqueada?: boolean;
+  /** Onde tocar para ouvir a instrução quando a voz está bloqueada. */
+  dicaVoz?: string;
   children: ReactNode;
 };
 
@@ -24,6 +26,7 @@ export function JogoLayout({
   onReiniciar,
   mensagem,
   vozBloqueada,
+  dicaVoz = "Toque na figura grande para ouvir a instrução 🔊",
   children,
 }: Props) {
   return (
@@ -69,7 +72,7 @@ export function JogoLayout({
         </p>
         {vozBloqueada && (
           <p role="status" className="mt-2 text-center text-base font-bold text-primary">
-            Toque na figura grande para ouvir a instrução 🔊
+            {dicaVoz}
           </p>
         )}
 
@@ -120,5 +123,18 @@ export function TelaFinal({
         Jogar de novo
       </button>
     </div>
+  );
+}
+
+/** Repete a instrução em jogos que não têm uma figura grande para tocar. */
+export function BotaoOuvir({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="mx-auto flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-xl font-extrabold text-primary-foreground shadow-[0_6px_0_0_color-mix(in_oklab,var(--foreground)_18%,transparent)] transition-transform hover:-translate-y-0.5 active:translate-y-0.5"
+    >
+      <span aria-hidden="true">🔊</span> Ouvir de novo
+    </button>
   );
 }

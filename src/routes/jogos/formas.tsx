@@ -42,11 +42,6 @@ const FORMAS: readonly Forma[] = [
   },
 ];
 
-/** "no círculo", "na estrela" */
-function em(forma: Forma) {
-  return `${forma.artigo === "a" ? "na" : "no"} ${forma.nome}`;
-}
-
 function FormaSvg({ forma, preenchida }: { forma: Forma; preenchida: boolean }) {
   return (
     <svg viewBox="0 0 100 100" className="size-24 sm:size-28" aria-hidden="true">
@@ -72,21 +67,29 @@ function JogoFormas() {
         FORMAS.filter((f) => f !== alvo),
         aleatorio,
       ),
-    instrucaoFalada: (alvo) => `Encontre ${alvo.artigo} ${alvo.nome}`,
+    // A instrução não diz o nome da forma: o jogo treina discriminação visual,
+    // então a criança compara o contorno com as peças. O nome vem no acerto.
+    instrucaoFalada: () => "Qual peça cabe neste contorno?",
     fraseFinal: "Você encaixou todas as formas. Parabéns!",
   });
   const { alvo } = jogo;
 
   function escolher(forma: Forma) {
     if (jogo.bloqueado || !alvo) return;
-    if (forma === alvo) jogo.acertar(elogioAleatorio());
-    else jogo.errar("Quase! Olhe o contorno", "Quase. Olhe o contorno");
+    if (forma === alvo) {
+      const e = elogioAleatorio();
+      jogo.acertar(
+        `${e} É ${alvo.artigo} ${alvo.nome}!`,
+        `${e} É ${alvo.artigo} ${alvo.nome}.`,
+        1600,
+      );
+    } else jogo.errar("Quase! Olhe o contorno", "Quase. Olhe o contorno");
   }
 
   return (
     <JogoLayout
       titulo="Encaixe das Formas"
-      instrucao={alvo ? `Qual peça cabe ${em(alvo)}?` : "Todas as formas encaixadas!"}
+      instrucao={alvo ? "Qual peça cabe neste contorno?" : "Todas as formas encaixadas!"}
       estrelas={jogo.estrelas}
       total={FORMAS.length}
       onReiniciar={jogo.reiniciar}
@@ -98,7 +101,7 @@ function JogoFormas() {
           <button
             type="button"
             onClick={jogo.ouvirDeNovo}
-            aria-label={`Ouvir novamente: ${alvo.nome}`}
+            aria-label="Ouvir a instrução novamente"
             className="card-brinquedo mx-auto flex size-44 items-center justify-center anim-pulinho"
           >
             <FormaSvg forma={alvo} preenchida={false} />

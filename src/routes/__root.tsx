@@ -144,9 +144,18 @@ function RootComponent() {
   // Service worker só em produção: em desenvolvimento ele atrapalharia o hot reload.
   useEffect(() => {
     if (!import.meta.env.PROD || !("serviceWorker" in navigator)) return;
-    navigator.serviceWorker.register("/sw.js").catch(() => {
-      /* sem cache offline; o app segue funcionando online */
-    });
+    navigator.serviceWorker
+      .register("/sw.js")
+      .then(() => navigator.serviceWorker.ready)
+      .then((registro) => {
+        // Os arquivos desta primeira carga foram baixados antes do service worker
+        // existir; ele os guarda agora para o app abrir offline na próxima visita.
+        const urls = performance.getEntriesByType("resource").map((r) => r.name);
+        registro.active?.postMessage({ tipo: "cachear", urls });
+      })
+      .catch(() => {
+        /* sem cache offline; o app segue funcionando online */
+      });
   }, []);
 
   // Required: nested routes render here. Removing <Outlet /> breaks all child routes.

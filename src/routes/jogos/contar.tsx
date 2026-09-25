@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { JogoLayout, TelaFinal } from "@/components/JogoLayout";
+import { BotaoOuvir, JogoLayout, TelaFinal } from "@/components/JogoLayout";
 import { useRodadas } from "@/hooks/useRodadas";
 import { elogioAleatorio, falar, montarOpcoes } from "@/lib/jogo";
 
@@ -26,7 +26,7 @@ export const Route = createFileRoute("/jogos/contar")({
 const OBJETOS = ["🍏", "🐤", "⭐", "🐞", "🎈"];
 const NUMEROS: readonly number[] = [1, 2, 3, 4, 5];
 
-/** Figuras da rodada. Remontado a cada rodada (via `key`), zerando a contagem. */
+/** Figuras da rodada. Remontado a cada rodada e a cada erro (via `key`), zerando a contagem. */
 function Figuras({ quantidade, objeto }: { quantidade: number; objeto: string }) {
   const [marcados, setMarcados] = useState<number[]>([]);
 
@@ -36,7 +36,7 @@ function Figuras({ quantidade, objeto }: { quantidade: number; objeto: string })
     setMarcados(novos);
     // A primeira figura interrompe a instrução; as seguintes entram na fila,
     // para que toques rápidos não engulam números ("um, dois, três").
-    falar(String(novos.length), { interromper: novos.length === 1 });
+    void falar(String(novos.length), { interromper: novos.length === 1 });
   }
 
   return (
@@ -68,16 +68,19 @@ function JogoContar() {
   const jogo = useRodadas<number, number>({
     itens: NUMEROS,
     total: NUMEROS.length,
+    // Em ordem crescente, as alternativas também reforçam a sequência numérica.
     gerarOpcoes: (n, aleatorio) =>
       montarOpcoes(
         n,
         NUMEROS.filter((x) => x !== n),
         aleatorio,
-      ),
+      ).sort((a, b) => a - b),
     instrucaoFalada: () => "Quantos você vê? Toque em cada um para contar.",
     fraseFinal: "Você contou tudo. Parabéns!",
   });
   const { alvo: quantidade } = jogo;
+  // Cada erro remonta as figuras para que a criança possa recontar do zero.
+  const [tentativa, setTentativa] = useState(0);
   const objeto = OBJETOS[jogo.indice % OBJETOS.length] ?? OBJETOS[0]!;
 
   function escolher(n: number) {
@@ -88,6 +91,7 @@ function JogoContar() {
       const falado = n === 1 ? "É um." : `São ${n}.`;
       jogo.acertar(`${e} ${escrito}`, `${e} ${falado}`, 1600);
     } else {
+      setTentativa((t) => t + 1);
       jogo.errar("Conte de novo, com calma", "Conte de novo, com calma", 1300);
     }
   }
@@ -103,12 +107,18 @@ function JogoContar() {
       onReiniciar={jogo.reiniciar}
       mensagem={jogo.msg}
       vozBloqueada={jogo.avisoVoz}
+      dicaVoz="Toque em 🔊 Ouvir de novo para ouvir a instrução"
     >
       {quantidade === undefined ? (
         <TelaFinal onReiniciar={jogo.reiniciar} texto="Você contou tudo!" />
       ) : (
         <div className="space-y-8">
-          <Figuras key={`${jogo.partida}-${jogo.indice}`} quantidade={quantidade} objeto={objeto} />
+          <BotaoOuvir onClick={jogo.ouvirDeNovo} />
+          <Figuras
+            key={`${jogo.partida}-${jogo.indice}-${tentativa}`}
+            quantidade={quantidade}
+            objeto={objeto}
+          />
 
           <div className="grid grid-cols-3 gap-4 sm:gap-6">
             {jogo.opcoes.map((n) => (

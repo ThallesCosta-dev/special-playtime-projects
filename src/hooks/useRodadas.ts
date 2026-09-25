@@ -1,5 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { embaralhar, falar, podeFalar, somAcerto, somErro, somFesta } from "@/lib/jogo";
+import {
+  aposFalaETempo,
+  embaralhar,
+  falar,
+  podeFalar,
+  somAcerto,
+  somErro,
+  somFesta,
+} from "@/lib/jogo";
 
 export type Mensagem = { texto: string; tipo: "acerto" | "erro" };
 
@@ -52,13 +60,14 @@ export function useRodadas<T, O>(config: Config<T, O>) {
   const [acertou, setAcertou] = useState(false);
   const [avisoVoz, setAvisoVoz] = useState(false);
 
-  const timerRodada = useRef<Timer | null>(null);
+  /** Cancela a espera pelo fim da comemoração (fala + tempo mínimo). */
+  const cancelarRodada = useRef<(() => void) | null>(null);
   const timerMsg = useRef<Timer | null>(null);
 
   const limparTimers = useCallback(() => {
-    if (timerRodada.current) clearTimeout(timerRodada.current);
+    cancelarRodada.current?.();
     if (timerMsg.current) clearTimeout(timerMsg.current);
-    timerRodada.current = null;
+    cancelarRodada.current = null;
     timerMsg.current = null;
   }, []);
 
@@ -100,13 +109,13 @@ export function useRodadas<T, O>(config: Config<T, O>) {
       setAvisoVoz(true);
       return;
     }
-    falar(cfg.current.instrucaoFalada(alvo));
+    void falar(cfg.current.instrucaoFalada(alvo));
   }, [alvo, partida]);
 
   useEffect(() => {
     if (partida === 0 || !fim) return;
     somFesta();
-    falar(cfg.current.fraseFinal);
+    void falar(cfg.current.fraseFinal);
   }, [fim, partida]);
 
   const mostrarMsg = useCallback((m: Mensagem, duracao: number) => {
@@ -118,47 +127,53 @@ export function useRodadas<T, O>(config: Config<T, O>) {
     }, duracao);
   }, []);
 
-  const acertar = useCallback(
-    (texto: string, falado: string = texto, atraso = 1400) => {
-      setAvisoVoz(false);
-      setBloqueado(true);
-      setAcertou(true);
-      somAcerto();
-      mostrarMsg({ texto, tipo: "acerto" }, atraso);
-      falar(falado);
-      if (timerRodada.current) clearTimeout(timerRodada.current);
-      timerRodada.current = setTimeout(() => {
-        timerRodada.current = null;
-        setBloqueado(false);
-        setAcertou(false);
-        setEstado((e) => {
-          const proximo = e.indice + 1;
-          const proximoAlvo = proximo < cfg.current.total ? e.rodadas[proximo] : undefined;
-          return {
-            ...e,
-            indice: proximo,
-            opcoes: proximoAlvo === undefined ? [] : cfg.current.gerarOpcoes(proximoAlvo, true),
-          };
-        });
-      }, atraso);
-    },
-    [mostrarMsg],
-  );
+  /**
+   * Comemora o acerto e avança. A próxima rodada só começa quando a frase de
+   * acerto termina (e passou pelo menos `atraso` ms), senão a instrução nova
+   * cortaria a frase no meio.
+   */
+  const acertar = useCallback((texto: string, falado: string = texto, atraso = 1400) => {
+    setAvisoVoz(false);
+    setBloqueado(true);
+    setAcertou(true);
+    somAcerto();
+    if (timerMsg.current) clearTimeout(timerMsg.current);
+    timerMsg.current = null;
+    setMsg({ texto, tipo: "acerto" });
+    cancelarRodada.current?.();
+    cancelarRodada.current = aposFalaETempo(falar(falado), atraso, () => {
+      cancelarRodada.current = null;
+      setMsg(null);
+      setBloqueado(false);
+      setAcertou(false);
+      setEstado((e) => {
+        const proximo = e.indice + 1;
+        const proximoAlvo = proximo < cfg.current.total ? e.rodadas[proximo] : undefined;
+        return {
+          ...e,
+          indice: proximo,
+          opcoes: proximoAlvo === undefined ? [] : cfg.current.gerarOpcoes(proximoAlvo, true),
+        };
+      });
+    });
+  }, []);
 
   const errar = useCallback(
     (texto: string, falado: string = texto, atraso = 1200) => {
       setAvisoVoz(false);
       somErro();
       mostrarMsg({ texto, tipo: "erro" }, atraso);
-      falar(falado);
+      void falar(falado);
     },
     [mostrarMsg],
   );
 
   const ouvirDeNovo = useCallback(() => {
+    // Durante a comemoração, repetir a instrução cortaria a frase de acerto.
+    if (bloqueado) return;
     setAvisoVoz(false);
-    if (alvo !== undefined) falar(cfg.current.instrucaoFalada(alvo));
-  }, [alvo]);
+    if (alvo !== undefined) void falar(cfg.current.instrucaoFalada(alvo));
+  }, [alvo, bloqueado]);
 
   // A estrela da rodada acende no instante do acerto, não só na troca de rodada.
   const estrelas = Math.min(total, indice + (acertou ? 1 : 0));
