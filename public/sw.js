@@ -2,10 +2,13 @@
  *
  * - Páginas (navegação): rede primeiro; se falhar, usa a cópia em cache.
  * - /assets, /fonts, /icons: cache primeiro; os nomes têm hash e nunca mudam.
+ * - Mensagem "cachear": a página envia os arquivos que baixou antes de este
+ *   service worker existir (JS, CSS e fontes da primeira visita), que de outro
+ *   modo nunca passariam pelo cache e o app não abriria offline.
  *
  * Ao mudar a estratégia, incremente VERSAO para descartar o cache antigo.
  */
-const VERSAO = "v1";
+const VERSAO = "v2";
 const CACHE = `brincar-aprender-${VERSAO}`;
 const PAGINAS = [
   "/",
@@ -60,6 +63,32 @@ async function cachePrimeiro(requisicao) {
   return resposta;
 }
 
+function ehEstatico(url) {
+  return (
+    url.origin === self.location.origin &&
+    PREFIXOS_ESTATICOS.some((p) => url.pathname.startsWith(p))
+  );
+}
+
+self.addEventListener("message", (evento) => {
+  const dados = evento.data;
+  if (!dados || dados.tipo !== "cachear" || !Array.isArray(dados.urls)) return;
+  evento.waitUntil(
+    (async () => {
+      const cache = await caches.open(CACHE);
+      for (const endereco of dados.urls) {
+        const url = new URL(endereco, self.location.origin);
+        if (!ehEstatico(url) || (await cache.match(url.href))) continue;
+        try {
+          await guardar(url.href, await fetch(url.href));
+        } catch {
+          /* sem rede agora; o arquivo entra no cache na próxima vez que for usado */
+        }
+      }
+    })(),
+  );
+});
+
 self.addEventListener("fetch", (evento) => {
   const requisicao = evento.request;
   if (requisicao.method !== "GET") return;
@@ -70,7 +99,7 @@ self.addEventListener("fetch", (evento) => {
     evento.respondWith(redePrimeiro(requisicao));
     return;
   }
-  if (PREFIXOS_ESTATICOS.some((p) => url.pathname.startsWith(p))) {
+  if (ehEstatico(url)) {
     evento.respondWith(cachePrimeiro(requisicao));
   }
 });

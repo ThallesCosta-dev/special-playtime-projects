@@ -101,12 +101,14 @@ function JogoLetras() {
                 type="button"
                 onClick={() => escolher(p)}
                 aria-label={p.palavra}
-                className="flex h-36 flex-col items-center justify-center gap-2 rounded-3xl border-4 border-foreground/10 bg-card shadow-[0_10px_0_0_color-mix(in_oklab,var(--foreground)_14%,transparent)] transition-transform hover:-translate-y-1 active:translate-y-1 sm:h-44"
+                className="flex h-36 items-center justify-center rounded-3xl border-4 border-foreground/10 bg-card shadow-[0_10px_0_0_color-mix(in_oklab,var(--foreground)_14%,transparent)] transition-transform hover:-translate-y-1 active:translate-y-1 sm:h-44"
               >
-                <span className="text-6xl" aria-hidden="true">
+                {/* Sem a palavra escrita: senão bastaria comparar a forma da letra com
+                    a inicial, sem associar o som da letra à figura. A palavra
+                    aparece na mensagem depois da escolha. */}
+                <span className="text-7xl" aria-hidden="true">
                   {p.emoji}
                 </span>
-                <span className="text-lg font-bold text-foreground">{p.palavra}</span>
               </button>
             ))}
           </div>

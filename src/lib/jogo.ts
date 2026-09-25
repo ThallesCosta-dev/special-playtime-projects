@@ -23,20 +23,54 @@ function vozPortugues(): SpeechSynthesisVoice | null {
   );
 }
 
-export function falar(texto: string, { interromper = true }: OpcoesFala = {}) {
-  if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
-  try {
-    if (interromper) window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(texto);
-    u.lang = "pt-BR";
-    u.rate = 0.85;
-    u.pitch = 1.1;
-    const voz = vozPortugues();
-    if (voz) u.voice = voz;
-    window.speechSynthesis.speak(u);
-  } catch {
-    /* voz indisponível */
-  }
+/**
+ * Fala o texto em português. A promessa resolve quando a fala termina, é
+ * interrompida ou falha, para que o jogo possa esperar a frase acabar antes de
+ * seguir. Como alguns navegadores às vezes não disparam `end`, há um limite de
+ * tempo proporcional ao texto.
+ */
+export function falar(texto: string, { interromper = true }: OpcoesFala = {}): Promise<void> {
+  return new Promise((resolve) => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+      resolve();
+      return;
+    }
+    const limite = setTimeout(resolve, 1500 + texto.length * 150);
+    const concluir = () => {
+      clearTimeout(limite);
+      resolve();
+    };
+    try {
+      if (interromper) window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(texto);
+      u.lang = "pt-BR";
+      u.rate = 0.85;
+      u.pitch = 1.1;
+      const voz = vozPortugues();
+      if (voz) u.voice = voz;
+      u.onend = concluir;
+      u.onerror = concluir;
+      window.speechSynthesis.speak(u);
+    } catch {
+      /* voz indisponível */
+      concluir();
+    }
+  });
+}
+
+/**
+ * Chama `seguir` só depois que a fala terminou e passou o tempo mínimo da
+ * comemoração. Devolve uma função que cancela a espera.
+ */
+export function aposFalaETempo(fala: Promise<void>, minimo: number, seguir: () => void) {
+  let cancelado = false;
+  const tempo = new Promise<void>((r) => setTimeout(r, minimo));
+  void Promise.all([fala, tempo]).then(() => {
+    if (!cancelado) seguir();
+  });
+  return () => {
+    cancelado = true;
+  };
 }
 
 let ctx: AudioContext | null = null;
